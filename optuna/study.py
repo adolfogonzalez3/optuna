@@ -491,10 +491,10 @@ class Study(BaseStudy):
             if trial.state != structs.TrialState.WAITING:
                 continue
 
-            # TODO(ohta): Use CAS
-            self.storage.set_trial_state(trial.trial_id, structs.TrialState.RUNNING)
+            if not self.storage.set_trial_state(trial.trial_id, structs.TrialState.RUNNING):
+                continue
 
-            self.logger.debug("Trial#{} was popped from the trial queue.".format(trial.number))
+            self.logger.debug("Trial#{} is popped from the trial queue.".format(trial.number))
             return trial.trial_id
 
         return None
