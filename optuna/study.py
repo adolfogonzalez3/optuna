@@ -241,8 +241,14 @@ class Study(BaseStudy):
 
         return self.storage.get_study_system_attrs(self.study_id)
 
-    def register_trial(self, params, distributions, user_attrs=None, system_attrs=None):
-        # type: (Dict[str, float], Dict[str, BaseDistribution], Optional[Dict[str,Any]], Optional[Dict[str, Any]]) -> None
+    def register_trial(
+            self,
+            params,  # type: Dict[str, float]
+            distributions,  # type: Dict[str, BaseDistribution]
+            user_attrs=None,  # type: Optional[Dict[str, Any]]
+            system_attrs=None,  # type: Optional[Dict[str, Any]]
+    ):
+        # type: (...) -> None
 
         # TODO(ohta): Add initial field values of a new trial to `create_new_trial_id` method.
         trial_id = self.storage.create_new_trial_id(self.study_id)
