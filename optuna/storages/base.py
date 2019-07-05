@@ -2,8 +2,7 @@ import abc
 import numpy as np
 import six
 
-from optuna import distributions  # NOQA
-from optuna import structs  # NOQA
+from optuna import structs
 from optuna import types
 
 if types.TYPE_CHECKING:
@@ -12,6 +11,8 @@ if types.TYPE_CHECKING:
     from typing import List  # NOQA
     from typing import Optional  # NOQA
     from typing import Tuple  # NOQA
+
+    from optuna.distributions import BaseDistribution  # NOQA
 
 DEFAULT_STUDY_NAME_PREFIX = 'no-name-'
 
@@ -99,8 +100,16 @@ class BaseStorage(object):
     # Basic trial manipulation
 
     @abc.abstractmethod
-    def create_new_trial_id(self, study_id):
-        # type: (int) -> int
+    def create_new_trial_id(
+            self,
+            study_id,  # type: int
+            state=structs.TrialState.RUNNING,  # type: structs.TrialState
+            params=None,  # type: Dict[str, Any]
+            param_distributions=None,  # type: Dict[str, BaseDistribution]
+            user_attrs=None,  # type: Dict[str, Any]
+            system_attrs=None,  # type: Dict[str, Any]
+    ):
+        # type: (...) -> int
 
         raise NotImplementedError
 
@@ -112,7 +121,7 @@ class BaseStorage(object):
 
     @abc.abstractmethod
     def set_trial_param(self, trial_id, param_name, param_value_internal, distribution):
-        # type: (int, str, float, distributions.BaseDistribution) -> bool
+        # type: (int, str, float, BaseDistribution) -> bool
 
         raise NotImplementedError
 

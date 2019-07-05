@@ -244,29 +244,18 @@ class Study(BaseStudy):
     def register_trial(
             self,
             params,  # type: Dict[str, float]
-            distributions,  # type: Dict[str, BaseDistribution]
-            user_attrs=None,  # type: Optional[Dict[str, Any]]
-            system_attrs=None,  # type: Optional[Dict[str, Any]]
+            param_distributions,  # type: Dict[str, BaseDistribution]
+            user_attrs=None,  # type: Dict[str, Any]
+            system_attrs=None,  # type: Dict[str, Any]
     ):
         # type: (...) -> None
 
-        # TODO(ohta): Add initial field values of a new trial to `create_new_trial_id` method.
-        trial_id = self.storage.create_new_trial_id(self.study_id)
-
-        for param_name, param_value in params.items():
-            distribution = distributions[param_name]
-            param_value_internal = distribution.to_internal_repr(param_value)
-            self.storage.set_trial_param(trial_id, param_name, param_value_internal, distribution)
-
-        user_attrs = user_attrs or {}
-        for k, v in user_attrs.items():
-            self.storage.set_trial_user_attr(trial_id, k, v)
-
-        system_attrs = system_attrs or {}
-        for k, v in system_attrs.items():
-            self.storage.set_trial_system_attr(trial_id, k, v)
-
-        self.storage.set_trial_state(trial_id, structs.TrialState.WAITING)
+        self.storage.create_new_trial_id(self.study_id,
+                                         state=structs.TrialState.WAITING,
+                                         params=params,
+                                         param_distributions=param_distributions,
+                                         user_attrs=user_attrs,
+                                         system_attrs=system_attrs)
 
     def optimize(
             self,

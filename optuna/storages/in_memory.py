@@ -2,7 +2,7 @@ import copy
 from datetime import datetime
 import threading
 
-from optuna import distributions  # NOQA
+from optuna import distributions
 from optuna.storages import base
 from optuna.storages.base import DEFAULT_STUDY_NAME_PREFIX
 from optuna import structs
@@ -13,6 +13,8 @@ if types.TYPE_CHECKING:
     from typing import Dict  # NOQA
     from typing import List  # NOQA
     from typing import Optional  # NOQA
+
+    from optuna.distributions import BaseDistribution  # NOQA
 
 IN_MEMORY_STORAGE_STUDY_ID = 0
 IN_MEMORY_STORAGE_STUDY_UUID = '00000000-0000-0000-0000-000000000000'
@@ -135,23 +137,52 @@ class InMemoryStorage(base.BaseStorage):
                 datetime_start=datetime_start)
         ]
 
-    def create_new_trial_id(self, study_id):
-        # type: (int) -> int
+    def create_new_trial_id(
+            self,
+            study_id,  # type: int
+            state=structs.TrialState.RUNNING,  # type: structs.TrialState
+            params=None,  # type: Dict[str, Any]
+            param_distributions=None,  # type: Dict[str, BaseDistribution]
+            user_attrs=None,  # type: Dict[str, Any]
+            system_attrs=None,  # type: Dict[str, Any]
+    ):
+        # type: (...) -> int
 
         self._check_study_id(study_id)
+        if state.is_finished():
+            raise ValueError("Cannot create a finished trial (the state is {}).".format(state))
+
+        params = params or {}
+        params_in_internal_repr = {}
+        param_distributions = param_distributions or {}
+        user_attrs = user_attrs or {}
+        system_attrs = system_attrs or {}
+
+        for param_name, param_value in params.items():
+            if param_name not in param_distributions:
+                raise ValueError("No distribution found for parameter '{}'.".format(param_name))
+
+            distribution = param_distributions[param_name]
+            params_in_internal_repr[param_name] = distribution.to_internal_repr(param_value)
+
+        for param_name in param_distributions.keys():
+            if param_name not in params:
+                del param_distributions[param_name]
+
         with self._lock:
             trial_id = len(self.trials)
+            system_attrs['_number'] = trial_id
             self.trials.append(
                 structs.FrozenTrial(
                     number=trial_id,
-                    state=structs.TrialState.RUNNING,
-                    params={},
-                    distributions={},
-                    user_attrs={},
-                    system_attrs={'_number': trial_id},
+                    state=state,
+                    params=params or {},
+                    distributions=param_distributions or {},
+                    user_attrs=user_attrs,
+                    system_attrs=system_attrs,
                     value=None,
                     intermediate_values={},
-                    params_in_internal_repr={},
+                    params_in_internal_repr=params_in_internal_repr,
                     datetime_start=datetime.now(),
                     datetime_complete=None,
                     trial_id=trial_id))
